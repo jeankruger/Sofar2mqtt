@@ -641,17 +641,17 @@ int listen(modbusResponse *resp)
 	if(inFrameSize < 5)
 	{
 		resp->errorLevel = 2;
-		resp->errorMessage = "Response too short";
+		resp->errorMessage = strdup("Response too short");
 	}
 	else if(checkCRC(inFrame, inFrameSize))
 	{
 		resp->errorLevel = 0;
-		resp->errorMessage = "Valid data frame";
+		resp->errorMessage = strdup("Valid data frame");
 	}
 	else
 	{
 		resp->errorLevel = 1;
-		resp->errorMessage = "Error: invalid data frame";
+		resp->errorMessage = strdup("Error: invalid data frame");
 	}
 
 	if(resp->errorLevel)
