@@ -111,11 +111,11 @@ PubSubClient mqtt(wifi);
 // SoftwareSerial is used to create a second serial port, which will be deidcated to RS485.
 // The built-in serial port remains available for flashing and debugging.
 #include <SoftwareSerial.h>
-#define SERIAL_COMMUNICATION_CONTROL_PIN D5 // Transmission set pin
+#define SERIAL_COMMUNICATION_CONTROL_PIN 5 // Transmission set pin
 #define RS485_TX HIGH
 #define RS485_RX LOW
-#define RXPin        D6  // Serial Receive pin
-#define TXPin        D7  // Serial Transmit pin
+#define RXPin        6  // Serial Receive pin
+#define TXPin        7  // Serial Transmit pin
 SoftwareSerial RS485Serial(RXPin, TXPin);
 
 // Sofar run states
