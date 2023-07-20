@@ -156,7 +156,7 @@ void AutoConnectWrapper::displayRoot() {
 }
 
 void AutoConnectWrapper::onConnect(IPAddress& ipaddr) {
-  String ipAddress = ipaddr.toString();
+  ipAddress = ipaddr.toString();
   log("WiFi connected on ");
   log(WiFi.SSID());
   log(", IP: ");
