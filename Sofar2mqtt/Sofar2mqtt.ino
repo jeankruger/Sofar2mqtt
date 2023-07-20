@@ -271,9 +271,8 @@ bool checkTimer(unsigned long *lastRun, unsigned long interval)
 String oledLine1;
 String oledLine2;
 String oledLine3;
-String oledLine4;
 
-void updateOLED(String line1, String line2, String line3, String line4)
+void updateOLED(String line1, String line2, String line3)
 {
 	display.clearDisplay();
 	display.setTextSize(1);
@@ -288,7 +287,7 @@ void updateOLED(String line1, String line2, String line3, String line4)
 	else
 		display.println(oledLine1);
 
-	display.setCursor(0,12);
+	display.setCursor(0,16);
 
 	if(line2 != "NULL")
 	{
@@ -298,7 +297,7 @@ void updateOLED(String line1, String line2, String line3, String line4)
 	else
 		display.println(oledLine2);
 
-	display.setCursor(0,24);
+	display.setCursor(0,32);
 
 	if(line3 != "NULL")
 	{
@@ -307,16 +306,6 @@ void updateOLED(String line1, String line2, String line3, String line4)
 	}
 	else
 		display.println(oledLine3);
-
-	display.setCursor(0,36);
-
-	if(line4 != "NULL")
-	{
-		display.println(line4);
-		oledLine4 = line4;
-	}
-	else
-		display.println(oledLine4);
 
 	display.display();
 }
@@ -462,9 +451,9 @@ void mqttReconnect()
 		mqtt.disconnect();		// Just in case.
 		delay(200);
 		Serial.print("Attempting MQTT connection...");
-		updateOLED("NULL", "connecting", "NULL", "MQTT.");
+		updateOLED("NULL", "connecting", "MQTT.");
 		delay(500);
-		updateOLED("NULL", "NULL", "NULL", "MQTT..");
+		updateOLED("NULL", "NULL", "MQTT..");
 
 
     mqtt.setServer(autoConnect.getConfiguration().mqttServer.c_str(), autoConnect.getConfiguration().mqttPort);
@@ -473,7 +462,7 @@ void mqttReconnect()
 		{
 			Serial.println("connected");
 			delay(1000);
-			updateOLED("NULL", "NULL", "NULL", "MQTT....");
+			updateOLED("NULL", "NULL", "MQTT....");
 			delay(1000);
 
 			//Set topic names to include the deviceName.
@@ -493,7 +482,7 @@ void mqttReconnect()
 				mqtt.subscribe(const_cast<char*>(chargeMode.c_str())) &&
 				mqtt.subscribe(const_cast<char*>(dischargeMode.c_str())))
 			{
-				updateOLED("NULL", "NULL", "NULL", "");
+				updateOLED("NULL", "NULL", "");
 				break;
 			}
 		}
@@ -501,7 +490,7 @@ void mqttReconnect()
 		Serial.print("failed, rc=");
 		Serial.print(mqtt.state());
 		Serial.println(" try again in 5 seconds");
-		updateOLED("NULL", "NULL", "NULL", "MQTT...");
+		updateOLED("NULL", "NULL", "MQTT...");
 
 		// Wait 5 seconds before retrying
 		delay(5000);
@@ -697,19 +686,16 @@ void heartbeat()
 			if (oledLine2 == "Online.")
 				flashDot = "Online";
 
-			if (oledLine3 == "RS485")
+			if (oledLine3 == "RS485 ERR")
 				oledLine3 = "";
 
-			if (oledLine4 == "ERROR")
-				oledLine4 = "";
-
-			updateOLED("NULL", flashDot, "NULL", "NULL");
+			updateOLED("NULL", "NULL", flashDot);
 		}
 		else
 		{
 			Serial.print("Bad heartbeat ");
 			Serial.println(ret);
-			updateOLED("NULL", "NULL", "RS485", "ERROR");
+			updateOLED("NULL", "NULL", "RS485 ERR");
 		}
 
 		//Flash the LED
@@ -739,49 +725,49 @@ void updateRunstate()
 			{
 				case waiting:
 					if (BATTERYSAVE)
-						updateOLED("NULL", "NULL", "Batt Save", "Waiting");
+						updateOLED("NULL", "Batt Save", "Waiting");
 					else
-						updateOLED("NULL", "NULL", "Standby", "");
+						updateOLED("NULL", "NULL", "Standby");
 					break;
 
 				case check:
-					updateOLED("NULL", "NULL", "Checking", "NULL");
+					updateOLED("NULL", "NULL", "Checking");
 					break;
 
 				case charging:
-					updateOLED("NULL", "NULL", HUMAN_CHARGING, String(batteryWatts())+"W");
+					updateOLED("NULL", HUMAN_CHARGING, String(batteryWatts())+"W");
 					break;
 
 #ifdef INVERTER_ME3000
 				case checkDischarge:
-					updateOLED("NULL", "NULL", "Check Dis", "NULL");
+					updateOLED("NULL", "NULL", "Check Dis");
 					break;
 #endif
 				case discharging:
-					updateOLED("NULL", "NULL", HUMAN_DISCHARGING, String(batteryWatts())+"W");
+					updateOLED("NULL", HUMAN_DISCHARGING, String(batteryWatts())+"W");
 					break;
 
 				case epsState:
-					updateOLED("NULL", "NULL", "EPS State", "NULL");
+					updateOLED("NULL", "NULL", "EPS State");
 					break;
 
 				case faultState:
-					updateOLED("NULL", "NULL", "FAULT", "NULL");
+					updateOLED("NULL", "NULL", "FAULT");
 					break;
 
 				case permanentFaultState:
-					updateOLED("NULL", "NULL", "PERMFAULT", "NULL");
+					updateOLED("NULL", "NULL", "PERMFAULT");
 					break;
 
 				default:
-					updateOLED("NULL", "NULL", "Runstate?", "NULL");
+					updateOLED("NULL", "NULL", "Runstate?");
 					break;
 			}
 		}
 		else
 		{
 			Serial.println(response.errorMessage);
-			updateOLED("NULL", "NULL", "CRC-FAULT", "NULL");
+			updateOLED("NULL", "NULL", "CRC-FAULT");
 		}
 	}
 }
@@ -811,7 +797,7 @@ unsigned int batteryWatts()
 		else
 		{
 			Serial.println(response.errorMessage);
-			updateOLED("NULL", "NULL", "CRC-FAULT", "NULL");
+			updateOLED("NULL", "NULL", "CRC-FAULT");
 		}
 	}
 
@@ -833,7 +819,7 @@ void setup()
 	display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize OLED with the I2C addr 0x3C (for the 64x48)
 	display.clearDisplay();
 	display.display();
-  updateOLED(deviceName, version, "Initializing", "");
+  updateOLED(deviceName, version, "Initializing");
 
   mqtt.setCallback(mqttCallback);
 
@@ -846,28 +832,28 @@ void loop()
   autoConnect.loop();
 
   if (!autoConnect.isConnected()) {
-    updateOLED(deviceName, version, "Hotspot enabled", "Pwd: 12345678");
+    updateOLED(deviceName, "Hotspot enabled", "Pwd: 12345678");
     return;
   }
 
   if (!autoConnect.getConfiguration().isValid()) {
-    updateOLED(deviceName, version, autoConnect.getIpAddress(), "Not configured");  
+    updateOLED(deviceName, autoConnect.getIpAddress(), "Not configured");  
     return;
   }
 
   if (autoConnect.isUpdating()) {
-    updateOLED(deviceName, version, autoConnect.getIpAddress(), "Flashing..."); 
+    updateOLED(deviceName, autoConnect.getIpAddress(), "Flashing..."); 
     return;
   }
 
 	//make sure mqtt is still connected
 	if((!mqtt.connected()) || !mqtt.loop())
 	{
-		updateOLED(autoConnect.getIpAddress(), "Offline", "NULL", "NULL");
+		updateOLED(autoConnect.getIpAddress(), "Offline", "NULL");
 		mqttReconnect();
 	}
 	else
-		updateOLED(autoConnect.getIpAddress(), "Online", "NULL", "NULL");
+		updateOLED(autoConnect.getIpAddress(), "Online", "NULL");
 
 	//Send a heartbeat to keep the inverter awake
 	heartbeat();
