@@ -6,13 +6,6 @@
 const char* deviceName = "Sofar2mqtt";
 const char* version = "v2.1.1";
 
-#define WIFI_SSID	"xxxxx"
-#define WIFI_PASSWORD	"xxxxx"
-#define MQTT_SERVER	"mqtt"
-#define MQTT_PORT	1883
-#define MQTT_USERNAME	"auser"			// Empty string for none.
-#define MQTT_PASSWORD	"apassword"
-
 /*****
 Sofar2mqtt is a remote control interface for Sofar solar and battery inverters.
 It allows remote control of the inverter and reports the invertor status, power usage, battery state etc for integration with smart home systems such as Home Assistant and Node-Red vi MQTT.  
@@ -99,12 +92,12 @@ calcCRC by angelo.compagnucci@gmail.com and jpmzometa@gmail.com
 
 #define RS485_TRIES 8       // x 50mS to wait for RS485 input chars.
 // Wifi parameters.
-#include <ESP8266WiFi.h>
+#include "AutoConnectWrapper.h"
+AutoConnectWrapper autoConnect;
 WiFiClient wifi;
 
 // MQTT parameters
 #include <PubSubClient.h>
-const char* mqttClientID = deviceName;
 PubSubClient mqtt(wifi);
 
 // SoftwareSerial is used to create a second serial port, which will be deidcated to RS485.
@@ -247,6 +240,9 @@ struct modbusResponse
 #define OLED_RESET 0  // GPIO0
 Adafruit_SSD1306 display(OLED_RESET);
 
+// Identify the first effective loop, when it's connected and configured
+bool isFirstEffectiveLoop = true;
+
 /**
  * Check to see if the elapsed interval has passed since the passed in
  * millis() value. If it has, return true and update the lastRun. Note
@@ -323,31 +319,6 @@ void updateOLED(String line1, String line2, String line3, String line4)
 		display.println(oledLine4);
 
 	display.display();
-}
-
-// Connect to WiFi
-void setup_wifi()
-{
-	// We start by connecting to a WiFi network
-	Serial.println();
-	Serial.print("Connecting to ");
-	Serial.println(WIFI_SSID);
-	updateOLED("NULL", "NULL", "WiFi..", "NULL");
-	WiFi.mode(WIFI_STA);
-	WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-
-	while (WiFi.status() != WL_CONNECTED)
-	{
-		delay(500);
-		Serial.print(".");
-		updateOLED("NULL", "NULL", "WiFi...", "NULL");
-	}
-
-	WiFi.hostname(deviceName);
-	Serial.println("");
-	Serial.print("WiFi connected - ESP IP address: ");
-	Serial.println(WiFi.localIP());
-	updateOLED("NULL", "NULL", "WiFi....", "NULL");
 }
 
 int addStateInfo(String &state, uint16_t reg, String human)
@@ -495,8 +466,10 @@ void mqttReconnect()
 		delay(500);
 		updateOLED("NULL", "NULL", "NULL", "MQTT..");
 
+
+    mqtt.setServer(autoConnect.getConfiguration().mqttServer.c_str(), autoConnect.getConfiguration().mqttPort);
 		// Attempt to connect
-		if(mqtt.connect(mqttClientID, MQTT_USERNAME, MQTT_PASSWORD))
+		if(mqtt.connect(autoConnect.getConfiguration().identifier.c_str(), autoConnect.getConfiguration().mqttUser.c_str(), autoConnect.getConfiguration().mqttPassword.c_str()))
 		{
 			Serial.println("connected");
 			delay(1000);
@@ -860,22 +833,33 @@ void setup()
 	display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize OLED with the I2C addr 0x3C (for the 64x48)
 	display.clearDisplay();
 	display.display();
-	updateOLED(deviceName, "connecting", "", version);
+  updateOLED(deviceName, version, "", "");
 
-	setup_wifi();
+  mqtt.setCallback(mqttCallback);
 
-	mqtt.setServer(MQTT_SERVER, MQTT_PORT);
-	mqtt.setCallback(mqttCallback);
-
-	//Wake up the inverter and put it in auto mode to begin with.
-	heartbeat();
-	mqttReconnect();
-	Serial.println("Set start up mode: Auto");
-	sendPassiveCmd(SOFAR_SLAVE_ID, SOFAR_FN_AUTO, 0, "startup_auto");
+  autoConnect.setup();
 }
 
 void loop()
 {
+
+  autoConnect.loop();
+
+  if (!autoConnect.isConnected()) {
+    updateOLED(deviceName, version, "Hotspot enabled", "Pwd: 12345678");
+    return;
+  }
+
+  if (!autoConnect.getConfiguration().isValid()) {
+    updateOLED(deviceName, version, autoConnect.getIpAddress(), "Not configured");  
+    return;
+  }
+
+  if (autoConnect.isUpdating()) {
+    updateOLED(deviceName, version, autoConnect.getIpAddress(), "Flashing..."); 
+    return;
+  }
+
 	//make sure mqtt is still connected
 	if((!mqtt.connected()) || !mqtt.loop())
 	{
@@ -887,6 +871,14 @@ void loop()
 
 	//Send a heartbeat to keep the inverter awake
 	heartbeat();
+
+  if (isFirstEffectiveLoop) {
+    isFirstEffectiveLoop = false;
+
+    //Put the inverter in auto mode to begin with.
+    Serial.println("Set start up mode: Auto");
+    sendPassiveCmd(SOFAR_SLAVE_ID, SOFAR_FN_AUTO, 0, "startup_auto");
+  }
 
 	//Check and display the runstate
 	updateRunstate();
