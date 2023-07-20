@@ -2,8 +2,6 @@
 //#define INVERTER_ME3000				// Uncomment for ME3000
 #define INVERTER_HYBRID			// Uncomment for Hybrid
 
-// The device name is used as the MQTT base topic. If you need more than one Sofar2mqtt on your network, give them unique names.
-const char* deviceName = "Sofar2mqtt";
 const char* version = "v2.1.1";
 
 /*****
@@ -345,8 +343,8 @@ void sendData()
 
 		state = state+"}";
 
-		//Prefix the mqtt topic name with deviceName.
-		String topic(deviceName);
+		//Prefix the mqtt topic name with identifier.
+		String topic(autoConnect.getConfiguration().identifier);
 		topic += "/state";
 		sendMqtt(const_cast<char*>(topic.c_str()), state);
 	}
@@ -355,7 +353,7 @@ void sendData()
 // This function is executed when an MQTT message arrives on a topic that we are subscribed to.
 void mqttCallback(String topic, byte *message, unsigned int length)
 {
-	if(!topic.startsWith(String(deviceName) + "/set/"))
+	if(!topic.startsWith(String(autoConnect.getConfiguration().identifier) + "/set/"))
 		return;
 
 	Serial.print("Message arrived on topic: ");
@@ -461,14 +459,14 @@ bool mqttReconnect()
     Serial.println("connected");
     updateOLED("NULL", "NULL", "MQTT..");
 
-    //Set topic names to include the deviceName.
-    String standbyMode(deviceName);
+    //Set topic names to include the identifier.
+    String standbyMode(autoConnect.getConfiguration().identifier);
     standbyMode += "/set/standby";
-    String autoMode(deviceName);
+    String autoMode(autoConnect.getConfiguration().identifier);
     autoMode += "/set/auto";
-    String chargeMode(deviceName);
+    String chargeMode(autoConnect.getConfiguration().identifier);
     chargeMode += "/set/charge";
-    String dischargeMode(deviceName);
+    String dischargeMode(autoConnect.getConfiguration().identifier);
     dischargeMode += "/set/discharge";
 
     // Subscribe or resubscribe to topics.
@@ -636,7 +634,7 @@ int sendPassiveCmd(uint8_t id, uint16_t cmd, uint16_t param, String pubTopic)
 		err = 0;
 	}
 
-	String topic(deviceName);
+	String topic(autoConnect.getConfiguration().identifier);
 	topic += "/response/" + pubTopic;
 	sendMqtt(const_cast<char*>(topic.c_str()), retMsg);
 	return err;
@@ -810,7 +808,7 @@ void setup()
 	display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize OLED with the I2C addr 0x3C (for the 64x48)
 	display.clearDisplay();
 	display.display();
-  updateOLED(deviceName, version, "Initializing");
+  updateOLED(autoConnect.getConfiguration().identifier, version, "Initializing");
 
   mqtt.setCallback(mqttCallback);
 
@@ -823,17 +821,17 @@ void loop()
   autoConnect.loop();
 
   if (!autoConnect.isConnected()) {
-    updateOLED(deviceName, "Hotspot enabled", "Pwd: 12345678");
+    updateOLED(autoConnect.getConfiguration().identifier, "Hotspot enabled", "Pwd: 12345678");
     return;
   }
 
   if (!autoConnect.getConfiguration().isValid()) {
-    updateOLED(deviceName, autoConnect.getIpAddress(), "Not configured");  
+    updateOLED(autoConnect.getConfiguration().identifier, autoConnect.getIpAddress(), "Not configured");  
     return;
   }
 
   if (autoConnect.isUpdating()) {
-    updateOLED(deviceName, autoConnect.getIpAddress(), "Flashing..."); 
+    updateOLED(autoConnect.getConfiguration().identifier, autoConnect.getIpAddress(), "Flashing..."); 
     return;
   }
 
