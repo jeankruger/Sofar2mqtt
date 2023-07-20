@@ -231,6 +231,9 @@ struct modbusResponse
 #define RUNSTATE_INTERVAL 5000
 #define SEND_INTERVAL 10000
 #define BATTERYSAVE_INTERVAL 3000
+#define MQTT_CONNECT_INTERVAL 5000
+
+unsigned long mqttConnectLastRun = 0;
 
 // Wemos OLED Shield set up. 64x48, pins D1 and D2
 #include <SPI.h>
@@ -443,58 +446,46 @@ void batterySave()
 }
 
 // This function reconnects the ESP8266 to the MQTT broker
-void mqttReconnect() 
+bool mqttReconnect() 
 {
-	// Loop until we're reconnected
-	while(true)
-	{
-		mqtt.disconnect();		// Just in case.
-		delay(200);
-		Serial.print("Attempting MQTT connection...");
-		updateOLED("NULL", "connecting", "MQTT.");
-		delay(500);
-		updateOLED("NULL", "NULL", "MQTT..");
+  mqtt.disconnect();		// Just in case.
+  delay(200);
+  Serial.print("Attempting MQTT connection...");
+  updateOLED("NULL", "connecting", "MQTT.");
 
 
-    mqtt.setServer(autoConnect.getConfiguration().mqttServer.c_str(), autoConnect.getConfiguration().mqttPort);
-		// Attempt to connect
-		if(mqtt.connect(autoConnect.getConfiguration().identifier.c_str(), autoConnect.getConfiguration().mqttUser.c_str(), autoConnect.getConfiguration().mqttPassword.c_str()))
-		{
-			Serial.println("connected");
-			delay(1000);
-			updateOLED("NULL", "NULL", "MQTT....");
-			delay(1000);
+  mqtt.setServer(autoConnect.getConfiguration().mqttServer.c_str(), autoConnect.getConfiguration().mqttPort);
+  // Attempt to connect
+  if(mqtt.connect(autoConnect.getConfiguration().identifier.c_str(), autoConnect.getConfiguration().mqttUser.c_str(), autoConnect.getConfiguration().mqttPassword.c_str()))
+  {
+    Serial.println("connected");
+    updateOLED("NULL", "NULL", "MQTT..");
 
-			//Set topic names to include the deviceName.
-			String standbyMode(deviceName);
-			standbyMode += "/set/standby";
-			String autoMode(deviceName);
-			autoMode += "/set/auto";
-			String chargeMode(deviceName);
-			chargeMode += "/set/charge";
-			String dischargeMode(deviceName);
-			dischargeMode += "/set/discharge";
+    //Set topic names to include the deviceName.
+    String standbyMode(deviceName);
+    standbyMode += "/set/standby";
+    String autoMode(deviceName);
+    autoMode += "/set/auto";
+    String chargeMode(deviceName);
+    chargeMode += "/set/charge";
+    String dischargeMode(deviceName);
+    dischargeMode += "/set/discharge";
 
-			// Subscribe or resubscribe to topics.
-			if(
-				mqtt.subscribe(const_cast<char*>(standbyMode.c_str())) &&
-				mqtt.subscribe(const_cast<char*>(autoMode.c_str())) &&
-				mqtt.subscribe(const_cast<char*>(chargeMode.c_str())) &&
-				mqtt.subscribe(const_cast<char*>(dischargeMode.c_str())))
-			{
-				updateOLED("NULL", "NULL", "");
-				break;
-			}
-		}
+    // Subscribe or resubscribe to topics.
+    if(
+      mqtt.subscribe(const_cast<char*>(standbyMode.c_str())) &&
+      mqtt.subscribe(const_cast<char*>(autoMode.c_str())) &&
+      mqtt.subscribe(const_cast<char*>(chargeMode.c_str())) &&
+      mqtt.subscribe(const_cast<char*>(dischargeMode.c_str())))
+    {
+      updateOLED("NULL", "NULL", "");
+      return true;
+    }
+  }
 
-		Serial.print("failed, rc=");
-		Serial.print(mqtt.state());
-		Serial.println(" try again in 5 seconds");
-		updateOLED("NULL", "NULL", "MQTT...");
-
-		// Wait 5 seconds before retrying
-		delay(5000);
-	}
+  Serial.print("failed, rc=");
+  Serial.print(mqtt.state());
+  return false;
 }
 
 /**
@@ -849,8 +840,17 @@ void loop()
 	//make sure mqtt is still connected
 	if((!mqtt.connected()) || !mqtt.loop())
 	{
-		updateOLED(autoConnect.getIpAddress(), "Offline", "NULL");
-		mqttReconnect();
+    if (checkTimer(&mqttConnectLastRun, MQTT_CONNECT_INTERVAL)) {
+      updateOLED(autoConnect.getIpAddress(), "Connect to", "MQTT server");
+      if (!mqttReconnect()) {
+        updateOLED(autoConnect.getIpAddress(), "MQTT server", "unreachable");
+        return;
+      } else {
+        updateOLED(autoConnect.getIpAddress(), "Online", "");
+      } 
+    } else {
+      return;
+    }
 	}
 	else
 		updateOLED(autoConnect.getIpAddress(), "Online", "NULL");
