@@ -100,7 +100,6 @@ calcCRC by angelo.compagnucci@gmail.com and jpmzometa@gmail.com
 #define RS485_TRIES 8       // x 50mS to wait for RS485 input chars.
 // Wifi parameters.
 #include <ESP8266WiFi.h>
-const char* wifiName = WIFI_SSID;
 WiFiClient wifi;
 
 // MQTT parameters
@@ -332,10 +331,10 @@ void setup_wifi()
 	// We start by connecting to a WiFi network
 	Serial.println();
 	Serial.print("Connecting to ");
-	Serial.println(wifiName);
+	Serial.println(WIFI_SSID);
 	updateOLED("NULL", "NULL", "WiFi..", "NULL");
 	WiFi.mode(WIFI_STA);
-	WiFi.begin(wifiName, WIFI_PASSWORD);
+	WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
 	while (WiFi.status() != WL_CONNECTED)
 	{
