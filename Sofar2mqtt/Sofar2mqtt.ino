@@ -833,7 +833,7 @@ void setup()
 	display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize OLED with the I2C addr 0x3C (for the 64x48)
 	display.clearDisplay();
 	display.display();
-  updateOLED(deviceName, version, "", "");
+  updateOLED(deviceName, version, "Initializing", "");
 
   mqtt.setCallback(mqttCallback);
 
@@ -863,11 +863,11 @@ void loop()
 	//make sure mqtt is still connected
 	if((!mqtt.connected()) || !mqtt.loop())
 	{
-		updateOLED("NULL", "Offline", "NULL", "NULL");
+		updateOLED(autoConnect.getIpAddress(), "Offline", "NULL", "NULL");
 		mqttReconnect();
 	}
 	else
-		updateOLED("NULL", "Online", "NULL", "NULL");
+		updateOLED(autoConnect.getIpAddress(), "Online", "NULL", "NULL");
 
 	//Send a heartbeat to keep the inverter awake
 	heartbeat();
