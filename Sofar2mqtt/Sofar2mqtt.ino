@@ -120,9 +120,6 @@ SoftwareSerial RS485Serial(RXPin, TXPin);
 #define faultState		6
 #define permanentFaultState	7
 
-#define HUMAN_CHARGING		"Charging"
-#define HUMAN_DISCHARGING	"Discharge"
-
 #elif defined INVERTER_HYBRID
 #define normal			2
 #define epsState		3
@@ -133,9 +130,6 @@ SoftwareSerial RS485Serial(RXPin, TXPin);
 // State names are a bit strange - makes sense to also match to these?
 #define charging		2
 #define discharging		6
-
-#define HUMAN_CHARGING		"Normal"
-#define HUMAN_DISCHARGING	"Normal1"
 #endif
 
 #define MAX_FRAME_SIZE          64
@@ -288,7 +282,7 @@ void updateOLED(String line1, String line2, String line3)
 	else
 		display.println(oledLine1);
 
-	display.setCursor(0,16);
+	display.setCursor(0,20);
 
 	if(line2 != "NULL")
 	{
@@ -714,7 +708,7 @@ void updateRunstate()
 			{
 				case waiting:
 					if (BATTERYSAVE)
-						updateOLED("NULL", "Batt Save", "Waiting");
+						updateOLED("NULL", "NULL", "Batt Save Waiting");
 					else
 						updateOLED("NULL", "NULL", "Standby");
 					break;
@@ -724,7 +718,7 @@ void updateRunstate()
 					break;
 
 				case charging:
-					updateOLED("NULL", HUMAN_CHARGING, String(batteryWatts())+"W");
+					updateOLED("NULL", "NULL", "Charging " + String(batteryWatts())+"W");
 					break;
 
 #ifdef INVERTER_ME3000
@@ -733,7 +727,7 @@ void updateRunstate()
 					break;
 #endif
 				case discharging:
-					updateOLED("NULL", HUMAN_DISCHARGING, String(batteryWatts())+"W");
+					updateOLED("NULL", "NULL", "Discharging " + String(batteryWatts())+"W");
 					break;
 
 				case epsState:
@@ -821,17 +815,17 @@ void loop()
   autoConnect.loop();
 
   if (!autoConnect.isConnected()) {
-    updateOLED(autoConnect.getConfiguration().identifier, "Hotspot enabled", "Pwd: 12345678");
+    updateOLED(autoConnect.getConfiguration().identifier, "Hotspot", "Pwd: 12345678");
     return;
   }
 
   if (!autoConnect.getConfiguration().isValid()) {
-    updateOLED(autoConnect.getConfiguration().identifier, autoConnect.getIpAddress(), "Not configured");  
+    updateOLED(autoConnect.getIpAddress(), "", "Not configured");  
     return;
   }
 
   if (autoConnect.isUpdating()) {
-    updateOLED(autoConnect.getConfiguration().identifier, autoConnect.getIpAddress(), "Flashing..."); 
+    updateOLED(autoConnect.getIpAddress(), "", "Flashing..."); 
     return;
   }
 
@@ -839,19 +833,19 @@ void loop()
 	if((!mqtt.connected()) || !mqtt.loop())
 	{
     if (checkTimer(&mqttConnectLastRun, MQTT_CONNECT_INTERVAL)) {
-      updateOLED(autoConnect.getIpAddress(), "Connect to", "MQTT server");
+      updateOLED(autoConnect.getIpAddress(), "MQTT", "Connection...");
       if (!mqttReconnect()) {
-        updateOLED(autoConnect.getIpAddress(), "MQTT server", "unreachable");
+        updateOLED(autoConnect.getIpAddress(), "MQTT", "Unreachable");
         return;
       } else {
-        updateOLED(autoConnect.getIpAddress(), "Online", "");
+        updateOLED(autoConnect.getIpAddress(), "Connected", "");
       } 
     } else {
       return;
     }
 	}
 	else
-		updateOLED(autoConnect.getIpAddress(), "Online", "NULL");
+		updateOLED(autoConnect.getIpAddress(), "Connected", "NULL");
 
 	//Send a heartbeat to keep the inverter awake
 	heartbeat();
