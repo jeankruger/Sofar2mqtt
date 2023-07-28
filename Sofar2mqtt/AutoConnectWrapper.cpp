@@ -148,8 +148,8 @@ void AutoConnectWrapper::displayRoot() {
   confState += "Identifier : " + configuration.identifier + "<br />";
   confState += "MQTT Server : " + configuration.mqttServer + ":" + String(configuration.mqttPort) +"<br />";
   confState += "Connected to AP : " + String(isConnected()) + "<br /><br />";
-  confState += "<h1>Console</h1>";
-  confState += "<code style=\"white-space: pre-line\">" + console + "</code>";
+  confState += "<h1>Logs</h1>";
+  confState += "<code style=\"white-space: pre-line\">" + logs + "</code>";
   
   content.replace("__CONTENT__", confState);
   
@@ -194,9 +194,9 @@ void AutoConnectWrapper::logln(String str) {
 void AutoConnectWrapper::log(String str) {
   Serial.print(str);
 
-  console = console + str;
+  logs = logs + str;
 
-  if (console.length() > 1024) {
-    console = "[...] " + console.substring(console.length() - 1024, console.length());
+  if (logs.length() > 1024) {
+    logs = "[...] " + logs.substring(logs.length() - 1024, logs.length());
   }
 }

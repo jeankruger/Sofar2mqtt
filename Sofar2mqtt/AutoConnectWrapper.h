@@ -43,7 +43,7 @@ private:
     boolean onOTA;
     Configuration configuration;
     String ipAddress;
-    String console;
+    String logs;
     int loopCount;
 
     AutoConnectAux auxConfig;
