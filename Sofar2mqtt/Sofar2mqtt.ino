@@ -809,6 +809,8 @@ void setup()
 	display.display();
   updateOLED(autoConnect.getConfiguration().identifier, version, "Initializing");
 
+  autoConnect.version = String(version);
+
   mqtt.setCallback(mqttCallback);
 
   autoConnect.setup();

@@ -47,6 +47,7 @@ void AutoConnectWrapper::setup() {
 
   config.ota = AC_OTA_BUILTIN;
   config.autoReconnect = true;
+  config.otaExtraCaption = version.c_str();
 
   config.title = configuration.identifier;
   config.apid = configuration.identifier;
@@ -145,6 +146,9 @@ void AutoConnectWrapper::displayRoot() {
   }
 
   confState += "&ensp;" + String(AUTOCONNECT_LINK(COG_16)) + "<br /><br />";
+  if (version != "") {
+    confState += "Version : " + version + "<br />";
+  }
   confState += "Identifier : " + configuration.identifier + "<br />";
   confState += "MQTT Server : " + configuration.mqttServer + ":" + String(configuration.mqttPort) +"<br />";
   confState += "Connected to AP : " + String(isConnected()) + "<br /><br />";

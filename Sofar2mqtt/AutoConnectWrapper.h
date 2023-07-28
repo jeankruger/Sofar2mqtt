@@ -71,6 +71,8 @@ private:
 public:
     AutoConnectWrapper();
 
+    String version = "";
+
     Configuration getConfiguration();
     boolean isConnected();
     boolean isUpdating();
