@@ -351,20 +351,19 @@ void mqttCallback(String topic, byte *message, unsigned int length)
 	if(!topic.startsWith(String(autoConnect.getConfiguration().identifier) + "/set/"))
 		return;
 
-	Serial.print("Message arrived on topic: ");
-	Serial.print(topic);
-	Serial.print(". Message: ");
+	autoConnect.log("Message arrived on topic: ");
+	autoConnect.log(topic);
+	autoConnect.log(". Message: ");
 	String messageTemp;
 	uint16_t fnCode = 0, fnParam = 0;
 	String cmd = topic.substring(topic.lastIndexOf("/") + 1);
 
 	for(int i = 0; i < length; i++)
 	{
-		Serial.print((char)message[i]);
+		autoConnect.log(String((char)message[i]));
 		messageTemp += (char)message[i];
 	}
 
-	Serial.println();
 	int   messageValue = messageTemp.toInt();
 	bool  messageBool = ((messageTemp != "false") && (messageTemp != "battery_save"));
 
@@ -414,11 +413,11 @@ void batterySave()
 		if(!readSingleReg(SOFAR_SLAVE_ID, SOFAR_REG_GRIDW, &rs))
 			p = ((rs.data[0] << 8) | rs.data[1]);
 		else
-			Serial.println("modbus error");
+			autoConnect.logln("modbus error");
 
-		Serial.print("Grid power: ");
-		Serial.println(p);
-		Serial.print("Battery save mode: ");
+		autoConnect.log("Grid power: ");
+		autoConnect.logln(String(p));
+		autoConnect.log("Battery save mode: ");
 
 		// Switch to auto when any power flows to the grid.
 		// We leave a little wriggle room because once you start charging the battery,
@@ -427,13 +426,13 @@ void batterySave()
 		{
 			//exporting to the grid
 			if(!sendPassiveCmd(SOFAR_SLAVE_ID, SOFAR_FN_AUTO, 0, "bsave_auto"))
-				Serial.println("auto");
+				autoConnect.logln("auto");
 		}
 		else
 		{
 			//importing from the grid
 			if(!sendPassiveCmd(SOFAR_SLAVE_ID, SOFAR_FN_STANDBY, SOFAR_PARAM_STANDBY, "bsave_standby"))
-				Serial.println("standby");
+				autoConnect.logln("standby");
 		}
 	}
 }
@@ -443,7 +442,7 @@ bool mqttReconnect()
 {
   mqtt.disconnect();		// Just in case.
   delay(200);
-  Serial.print("Attempting MQTT connection...");
+  autoConnect.log("Attempting MQTT connection...");
   updateOLED("NULL", "connecting", "MQTT.");
 
 
@@ -451,7 +450,7 @@ bool mqttReconnect()
   // Attempt to connect
   if(mqtt.connect(autoConnect.getConfiguration().identifier.c_str(), autoConnect.getConfiguration().mqttUser.c_str(), autoConnect.getConfiguration().mqttPassword.c_str()))
   {
-    Serial.println("connected");
+    autoConnect.logln("Connected to the MQTT server");
     updateOLED("NULL", "NULL", "MQTT..");
 
     //Set topic names to include the identifier.
@@ -476,8 +475,8 @@ bool mqttReconnect()
     }
   }
 
-  Serial.print("failed, rc=");
-  Serial.print(mqtt.state());
+  autoConnect.log("failed, rc=");
+  autoConnect.log(String(mqtt.state()));
   return false;
 }
 
@@ -538,7 +537,7 @@ int listen(modbusResponse *resp)
 
 		if(tries >= RS485_TRIES)
 		{
-			Serial.println("Timeout waiting for RS485 response.");
+			autoConnect.logln("Timeout waiting for RS485 response.");
 			break;
 		}
 
@@ -600,7 +599,7 @@ int listen(modbusResponse *resp)
 	}
 
 	if(resp->errorLevel)
-		Serial.println(resp->errorMessage);
+		autoConnect.logln(resp->errorMessage);
 
 	return -resp->errorLevel;
 }
@@ -643,7 +642,7 @@ void sendMqtt(char* topic, String msg_str)
 	msg_str.toCharArray(msg, msg_str.length() + 1); //packaging up the data to publish to mqtt
 
 	if (!(mqtt.publish(topic, msg)))
-		Serial.println("MQTT publish failed");
+		autoConnect.logln("MQTT publish failed");
 }
 
 int heartbeat()
@@ -656,7 +655,7 @@ int heartbeat()
 		uint8_t	sendHeartbeat[] = {SOFAR_SLAVE_ID, 0x49, 0x22, 0x01, 0x22, 0x02, 0x00, 0x00};
 		int	ret;
 
-		Serial.println("Send heartbeat");
+		autoConnect.logln("Send heartbeat");
 
 		// This just makes the dot on the first line of the OLED screen flash on and off with
 		// the heartbeat and clears any previous RS485 error massage that might still be there.
@@ -679,8 +678,8 @@ int heartbeat()
 		}
 		else
 		{
-			Serial.print("Bad heartbeat ");
-			Serial.println(ret);
+			autoConnect.log("Bad heartbeat ");
+			autoConnect.logln(String(ret));
 			updateOLED("NULL", "NULL", "RS485 ERR");
       return -1;
 		}
@@ -703,12 +702,12 @@ void updateRunstate()
 	{
 		modbusResponse  response;
 
-		Serial.print("Get runstate: ");
+		autoConnect.log("Get runstate: ");
 
 		if(!readSingleReg(SOFAR_SLAVE_ID, SOFAR_REG_RUNSTATE, &response))
 		{
 			INVERTER_RUNNINGSTATE = ((response.data[0] << 8) | response.data[1]);
-			Serial.println(INVERTER_RUNNINGSTATE);
+			autoConnect.logln(String(INVERTER_RUNNINGSTATE));
 
 			switch(INVERTER_RUNNINGSTATE)
 			{
@@ -755,7 +754,7 @@ void updateRunstate()
 		}
 		else
 		{
-			Serial.println(response.errorMessage);
+			autoConnect.logln(response.errorMessage);
 			updateOLED("NULL", "NULL", "CRC-FAULT");
 		}
 	}
@@ -785,7 +784,7 @@ unsigned int batteryWatts()
 		}
 		else
 		{
-			Serial.println(response.errorMessage);
+			autoConnect.logln(response.errorMessage);
 			updateOLED("NULL", "NULL", "CRC-FAULT");
 		}
 	}
@@ -844,14 +843,14 @@ void loop()
         updateOLED(autoConnect.getIpAddress(), "MQTT", "Unreachable");
         return;
       } else {
-        updateOLED(autoConnect.getIpAddress(), "Connected", "");
+        updateOLED(autoConnect.getIpAddress(), "MQTT OK", "");
       } 
     } else {
       return;
     }
 	}
 	else
-		updateOLED(autoConnect.getIpAddress(), "Connected", "NULL");
+		updateOLED(autoConnect.getIpAddress(), "MQTT OK", "NULL");
 
 	//Send a heartbeat to keep the inverter awake
   int heartbeatResult =  heartbeat();
@@ -870,7 +869,7 @@ void loop()
     isFirstEffectiveLoop = false;
 
     //Put the inverter in auto mode to begin with.
-    Serial.println("Set start up mode: Auto");
+    autoConnect.logln("Set start up mode: Auto");
     sendPassiveCmd(SOFAR_SLAVE_ID, SOFAR_FN_AUTO, 0, "startup_auto");
   }
 
