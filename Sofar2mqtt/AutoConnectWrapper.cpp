@@ -48,10 +48,9 @@ void AutoConnectWrapper::setup() {
   config.ota = AC_OTA_BUILTIN;
   config.autoReconnect = true;
 
-  if (configuration.isValid()) {
-    config.apid = configuration.identifier;
-    config.hostName = configuration.identifier;
-  }
+  config.title = configuration.identifier;
+  config.apid = configuration.identifier;
+  config.hostName = configuration.identifier;
 
   portal.config(config);
   portal.join(auxConfig);
