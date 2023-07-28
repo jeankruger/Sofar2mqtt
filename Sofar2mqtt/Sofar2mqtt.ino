@@ -237,6 +237,7 @@ Adafruit_SSD1306 display(OLED_RESET);
 
 // Identify the first effective loop, when it's connected and configured
 bool isFirstEffectiveLoop = true;
+bool lastHeartbeatSuccess = false;
 
 /**
  * Check to see if the elapsed interval has passed since the passed in
@@ -645,7 +646,7 @@ void sendMqtt(char* topic, String msg_str)
 		Serial.println("MQTT publish failed");
 }
 
-void heartbeat()
+int heartbeat()
 {
 	static unsigned long  lastRun = 0;
 
@@ -673,12 +674,15 @@ void heartbeat()
 				oledLine3 = "";
 
 			updateOLED("NULL", "NULL", flashDot);
+
+      return 1;
 		}
 		else
 		{
 			Serial.print("Bad heartbeat ");
 			Serial.println(ret);
 			updateOLED("NULL", "NULL", "RS485 ERR");
+      return -1;
 		}
 
 		//Flash the LED
@@ -686,6 +690,8 @@ void heartbeat()
 		delay(4);
 		digitalWrite(LED_BUILTIN, HIGH);
 	}
+  
+  return 0;
 }
 
 void updateRunstate()
@@ -848,7 +854,17 @@ void loop()
 		updateOLED(autoConnect.getIpAddress(), "Connected", "NULL");
 
 	//Send a heartbeat to keep the inverter awake
-	heartbeat();
+  int heartbeatResult =  heartbeat();
+
+  if (heartbeatResult == 1) {
+    lastHeartbeatSuccess = true;
+  } else if (heartbeatResult == -1) {
+    lastHeartbeatSuccess = false;
+  }
+
+  if (!lastHeartbeatSuccess) {
+    return;
+  }
 
   if (isFirstEffectiveLoop) {
     isFirstEffectiveLoop = false;
