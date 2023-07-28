@@ -56,7 +56,9 @@ void AutoConnectWrapper::setup() {
   portal.join(auxConfig);
   portal.on(CONF_URI, std::bind(&AutoConnectWrapper::onDisplayConfiguration, this, std::placeholders::_1, std::placeholders::_2));
   portal.onConnect(std::bind(&AutoConnectWrapper::onConnect, this, std::placeholders::_1));
-  portal.onOTAStart(std::bind(&AutoConnectWrapper::OTAStart, this));
+  portal.onOTAStart(std::bind(&AutoConnectWrapper::onOTAStart, this));
+  portal.onOTAEnd(std::bind(&AutoConnectWrapper::onOTAEnd, this));
+  portal.onOTAError(std::bind(&AutoConnectWrapper::onOTAError, this));
   portal.begin();
 }
 
@@ -162,9 +164,19 @@ void AutoConnectWrapper::onConnect(IPAddress& ipaddr) {
   logln(ipAddress);
 }
 
-void AutoConnectWrapper::OTAStart() {
+void AutoConnectWrapper::onOTAStart() {
   logln("Start OTA updating");
   onOTA = true;
+}
+
+void AutoConnectWrapper::onOTAEnd() {
+  logln("Finish OTA updating with success");
+  onOTA = false;
+}
+
+void AutoConnectWrapper::onOTAError() {
+  logln("Finish OTA updating on error");
+  onOTA = false;
 }
 
 String AutoConnectWrapper::onDisplayConfiguration(AutoConnectAux& aux, PageArgument& args) {

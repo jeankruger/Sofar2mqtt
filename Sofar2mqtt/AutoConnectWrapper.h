@@ -63,7 +63,9 @@ private:
     void saveConfiguration();
     void parseConfiguration();
     void onConnect(IPAddress& ipaddr);
-    void OTAStart();
+    void onOTAStart();
+    void onOTAEnd();
+    void onOTAError();
     String onDisplayConfiguration(AutoConnectAux& aux, PageArgument& args);
 
 public:
