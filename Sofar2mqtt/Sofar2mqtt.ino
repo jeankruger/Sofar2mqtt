@@ -795,6 +795,13 @@ unsigned int batteryWatts()
 void setup()
 {
 	Serial.begin(9600);
+
+  //Turn on the OLED
+	display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize OLED with the I2C addr 0x3C (for the 64x48)
+	display.clearDisplay();
+	display.display();
+  updateOLED(autoConnect.getConfiguration().identifier, version, "Init...");
+
 	pinMode(LED_BUILTIN, OUTPUT);
 
 	pinMode(SERIAL_COMMUNICATION_CONTROL_PIN, OUTPUT);
@@ -803,17 +810,15 @@ void setup()
 
 	delay(500);
 
-	//Turn on the OLED
-	display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize OLED with the I2C addr 0x3C (for the 64x48)
-	display.clearDisplay();
-	display.display();
-  updateOLED(autoConnect.getConfiguration().identifier, version, "Initializing");
+  updateOLED(autoConnect.getConfiguration().identifier, "Hotspot", "Pwd: 12345678");
 
   autoConnect.version = String(version);
 
   mqtt.setCallback(mqttCallback);
 
   autoConnect.setup();
+
+  updateOLED(autoConnect.getConfiguration().identifier, "Wifi", "Connection...");
 }
 
 void loop()

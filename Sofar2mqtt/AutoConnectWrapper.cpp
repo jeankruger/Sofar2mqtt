@@ -47,6 +47,7 @@ void AutoConnectWrapper::setup() {
 
   config.ota = AC_OTA_BUILTIN;
   config.autoReconnect = true;
+  config.reconnectInterval = 6;
   config.otaExtraCaption = version.c_str();
 
   config.title = configuration.identifier;
